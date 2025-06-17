@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  chatbot:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}  # From .env
+    volumes:
+      - .:/app  # For development (hot-reload)

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creative Content Suggester</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Creative Content Suggester</h1>
+        <p>Tell me what kind of content you're looking for, and I'll suggest ideas!</p>
+        
+        <div class="chat-container">
+            <div id="chat-box"></div>
+            
+            <form id="chat-form">
+                <input type="text" id="user-input" placeholder="E.g., 'blog topics about sustainable living'" required>
+                <button type="submit">Get Suggestions</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('chat-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const userInput = document.getElementById('user-input').value;
+            
+            // Add user message to chat
+            addMessage('You', userInput);
+            
+            // Clear input
+            document.getElementById('user-input').value = '';
+            
+            // Show loading message
+            const loadingId = addMessage('Assistant', 'Thinking...', true);
+            
+            // Get suggestion from server
+            fetch('/get_suggestion', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `user_input=${encodeURIComponent(userInput)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    updateMessage(loadingId, 'Assistant', `Error: ${data.error}`);
+                } else {
+                    updateMessage(loadingId, 'Assistant', data.suggestion);
+                }
+            })
+            .catch(error => {
+                updateMessage(loadingId, 'Assistant', `Error: ${error.message}`);
+            });
+        });
+        
+        function addMessage(sender, message, isTemp = false) {
+            const chatBox = document.getElementById('chat-box');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender.toLowerCase()}-message`;
+            
+            const senderSpan = document.createElement('span');
+            senderSpan.className = 'sender';
+            senderSpan.textContent = sender + ': ';
+            
+            const contentSpan = document.createElement('span');
+            contentSpan.className = 'content';
+            contentSpan.textContent = message;
+            
+            messageDiv.appendChild(senderSpan);
+            messageDiv.appendChild(contentSpan);
+            chatBox.appendChild(messageDiv);
+            
+            chatBox.scrollTop = chatBox.scrollHeight;
+            
+            if (isTemp) {
+                messageDiv.id = 'temp-' + Date.now();
+                return messageDiv.id;
+            }
+            return null;
+        }
+        
+        function updateMessage(id, sender, newMessage) {
+            const messageDiv = document.getElementById(id);
+            if (messageDiv) {
+                messageDiv.querySelector('.content').textContent = newMessage;
+                messageDiv.id = '';
+            } else {
+                addMessage(sender, newMessage);
+            }
+        }
+    </script>
+</body>
+</html>
